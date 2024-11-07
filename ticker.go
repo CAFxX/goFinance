@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 )
 
 type Ticker struct {
-	Dates  []int64
+	Dates  []time.Time
 	Close  []float64
 	Volume []int64
 }
@@ -61,8 +62,18 @@ func GetTicker(symbol string) (Ticker, error) {
 	data := res.Chart.Result[0]
 
 	return Ticker{
-		Dates:  data.Timestamp,
+		Dates:  parseDates(data.Timestamp),
 		Close:  data.Indicators.Quote[0].Close,
 		Volume: data.Indicators.Quote[0].Volume,
 	}, nil
+}
+
+func parseDates(unixTimes []int64) []time.Time {
+	res := make([]time.Time, len(unixTimes))
+
+	for i, t := range unixTimes {
+		res[i] = time.Unix(t, 0)
+	}
+
+	return res
 }
