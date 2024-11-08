@@ -10,9 +10,8 @@ import (
 )
 
 type Ticker struct {
-	Dates  []time.Time
-	Close  []float64
-	Volume []int64
+	Dates      []time.Time
+	Indicators map[string][]float64
 }
 
 type Response struct {
@@ -26,7 +25,7 @@ type Response struct {
 					Low    []float64 `json:"low"`
 					High   []float64 `json:"high"`
 					Open   []float64 `json:"open"`
-					Volume []int64   `json:"volume"`
+					Volume []float64 `json:"volume"`
 				} `json:"quote"`
 			} `json:"indicators"`
 		} `json:"result"`
@@ -37,7 +36,7 @@ type Response struct {
 func GetTicker(symbol string, period string, interval string) (Ticker, error) {
 	periodString := dateRange(period)
 	url := fmt.Sprintf("https://query1.finance.yahoo.com/v8/finance/chart/%s?%s&interval=%s", symbol, periodString, interval)
-	fmt.Println(url)
+
 	resp, err := http.Get(url)
 	if err != nil {
 		return Ticker{}, err
@@ -63,11 +62,18 @@ func GetTicker(symbol string, period string, interval string) (Ticker, error) {
 
 	data := res.Chart.Result[0]
 
-	return Ticker{
-		Dates:  parseDates(data.Timestamp),
-		Close:  data.Indicators.Quote[0].Close,
-		Volume: data.Indicators.Quote[0].Volume,
-	}, nil
+	ticker := Ticker{
+		Dates: parseDates(data.Timestamp),
+		Indicators: map[string][]float64{
+			"open":   data.Indicators.Quote[0].Open,
+			"high":   data.Indicators.Quote[0].High,
+			"low":    data.Indicators.Quote[0].Low,
+			"close":  data.Indicators.Quote[0].Close,
+			"volume": data.Indicators.Quote[0].Volume,
+		},
+	}
+
+	return ticker, nil
 }
 
 func parseDates(unixTimes []int64) []time.Time {
