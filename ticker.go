@@ -27,6 +27,9 @@ type Response struct {
 					Open   []float64 `json:"open"`
 					Volume []float64 `json:"volume"`
 				} `json:"quote"`
+				AdjClose []struct {
+					AdjClose []float64 `json:"adjclose"`
+				} `json:"adjclose"`
 			} `json:"indicators"`
 		} `json:"result"`
 		Error any
@@ -71,6 +74,10 @@ func GetTicker(symbol string, period string, interval string) (Ticker, error) {
 			"close":  data.Indicators.Quote[0].Close,
 			"volume": data.Indicators.Quote[0].Volume,
 		},
+	}
+
+	if len(data.Indicators.AdjClose) > 0 {
+		ticker.Indicators["adjClose"] = data.Indicators.AdjClose[0].AdjClose
 	}
 
 	return ticker, nil
