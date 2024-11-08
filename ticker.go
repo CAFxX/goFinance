@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -33,9 +34,10 @@ type Response struct {
 	} `json:"chart"`
 }
 
-func GetTicker(symbol string) (Ticker, error) {
-	url := fmt.Sprintf("https://query1.finance.yahoo.com/v8/finance/chart/%s", symbol)
-
+func GetTicker(symbol string, period string, interval string) (Ticker, error) {
+	periodString := dateRange(period)
+	url := fmt.Sprintf("https://query1.finance.yahoo.com/v8/finance/chart/%s?%s&interval=%s", symbol, periodString, interval)
+	fmt.Println(url)
 	resp, err := http.Get(url)
 	if err != nil {
 		return Ticker{}, err
@@ -76,4 +78,41 @@ func parseDates(unixTimes []int64) []time.Time {
 	}
 
 	return res
+}
+
+func dateRange(period string) string {
+	var start time.Time
+	today := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.UTC)
+	switch period {
+	case "1d":
+		start = today.AddDate(0, 0, -1)
+	case "5d":
+		start = today.AddDate(0, 0, -5)
+	case "1mo":
+		start = today.AddDate(0, -1, 0)
+	case "3mo":
+		start = today.AddDate(0, -3, 0)
+	case "6mo":
+		start = today.AddDate(0, -6, 0)
+	case "1y":
+		start = today.AddDate(-1, 0, 0)
+	case "2y":
+		start = today.AddDate(-2, 0, -5)
+	case "5y":
+		start = today.AddDate(-5, 0, -5)
+	case "10y":
+		start = today.AddDate(-10, 0, -5)
+	case "ytd":
+		start = time.Date(time.Now().Year(), 1, 1, 0, 0, 0, 0, time.UTC)
+	// decide if we want to pull the first date of the ticker in to add this functionality
+	//case "max":
+	//	start := today.AddDate(0, 0, -5)
+	default:
+		// default to 1y prior
+		start = today.AddDate(-1, 0, 0)
+	}
+	startStr := strconv.FormatInt(start.Unix(), 10)
+	todayStr := strconv.FormatInt(today.Unix(), 10)
+
+	return fmt.Sprintf("period1=%s&period2=%s", startStr, todayStr)
 }
