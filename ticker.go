@@ -37,7 +37,11 @@ type Response struct {
 }
 
 func GetTicker(symbol string, period string, interval string) (Ticker, error) {
-	periodString := dateRange(period)
+	periodString, err := dateRange(period)
+	if err != nil {
+		return Ticker{}, err
+	}
+
 	url := fmt.Sprintf("https://query1.finance.yahoo.com/v8/finance/chart/%s?%s&interval=%s", symbol, periodString, interval)
 
 	resp, err := http.Get(url)
@@ -93,7 +97,7 @@ func parseDates(unixTimes []int64) []time.Time {
 	return res
 }
 
-func dateRange(period string) string {
+func dateRange(period string) (string, error) {
 	var start time.Time
 	today := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.UTC)
 	switch period {
@@ -122,10 +126,10 @@ func dateRange(period string) string {
 	//	start := today.AddDate(0, 0, -5)
 	default:
 		// default to 1y prior
-		start = today.AddDate(-1, 0, 0)
+		return "", errInvalidDateRange
 	}
 	startStr := strconv.FormatInt(start.Unix(), 10)
 	todayStr := strconv.FormatInt(today.Unix(), 10)
 
-	return fmt.Sprintf("period1=%s&period2=%s", startStr, todayStr)
+	return fmt.Sprintf("period1=%s&period2=%s", startStr, todayStr), nil
 }
