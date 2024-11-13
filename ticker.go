@@ -156,9 +156,35 @@ func validInterval(interval string) error {
 		"1y",
 	}
 
-	if slices.Contains(intervals, interval) {
+	if !slices.Contains(intervals, interval) {
 		return errInvalidInterval
 	}
+
+	return nil
+}
+
+func (t *Ticker) RollingAverage(target string, result string, window int) error {
+	if window < 1 || window >= len(t.Indicators[target]) {
+		return errInvalidWindow
+	}
+	vals := t.Indicators[target]
+	newCol := make([]float64, len(vals))
+
+	for idx, _ := range vals {
+		if idx < window-1 {
+			newCol[idx] = 0
+		} else {
+			sum := 0.0
+			slice := vals[idx-window+1 : idx+1]
+			for _, x := range slice {
+				sum += x
+			}
+
+			newCol[idx] = sum / float64(len(slice))
+		}
+	}
+
+	t.Indicators[result] = newCol
 
 	return nil
 }
