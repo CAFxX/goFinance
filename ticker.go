@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"slices"
 	"strconv"
 	"time"
 )
@@ -38,6 +39,11 @@ type Response struct {
 
 func GetTicker(symbol string, period string, interval string) (Ticker, error) {
 	periodString, err := dateRange(period)
+	if err != nil {
+		return Ticker{}, err
+	}
+
+	err = validInterval(interval)
 	if err != nil {
 		return Ticker{}, err
 	}
@@ -132,4 +138,27 @@ func dateRange(period string) (string, error) {
 	todayStr := strconv.FormatInt(today.Unix(), 10)
 
 	return fmt.Sprintf("period1=%s&period2=%s", startStr, todayStr), nil
+}
+
+func validInterval(interval string) error {
+	intervals := []string{
+		"1m",
+		"2m",
+		"3m",
+		"5m",
+		"15m",
+		"30m",
+		"60m",
+		"4h",
+		"1d",
+		"1wk",
+		"1mo",
+		"1y",
+	}
+
+	if slices.Contains(intervals, interval) {
+		return errInvalidInterval
+	}
+
+	return nil
 }
