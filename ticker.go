@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"slices"
 	"time"
+
+	"github.com/corpix/uarand"
 )
 
 type Ticker struct {
@@ -50,7 +52,13 @@ func GetTicker(symbol string, period string, interval string) (Ticker, error) {
 
 	url := fmt.Sprintf("https://query1.finance.yahoo.com/v8/finance/chart/%s?period1=%d&period2=%d&interval=%s", symbol, start, end, interval)
 
-	resp, err := http.Get(url)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return Ticker{}, err
+	}
+	req.Header.Set("User-Agent", uarand.GetRandom())
+
+	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return Ticker{}, err
 	}
