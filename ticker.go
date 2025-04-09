@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"slices"
-	"strconv"
 	"time"
 )
 
@@ -38,7 +38,7 @@ type Response struct {
 }
 
 func GetTicker(symbol string, period string, interval string) (Ticker, error) {
-	periodString, err := dateRange(period)
+	start, end, err := dateRange(period)
 	if err != nil {
 		return Ticker{}, err
 	}
@@ -48,7 +48,7 @@ func GetTicker(symbol string, period string, interval string) (Ticker, error) {
 		return Ticker{}, err
 	}
 
-	url := fmt.Sprintf("https://query1.finance.yahoo.com/v8/finance/chart/%s?%s&interval=%s", symbol, periodString, interval)
+	url := fmt.Sprintf("https://query1.finance.yahoo.com/v8/finance/chart/%s?period1=%d&period2=%d&interval=%s", symbol, start, end, interval)
 
 	resp, err := http.Get(url)
 	if err != nil {
@@ -103,7 +103,7 @@ func parseDates(unixTimes []int64) []time.Time {
 	return res
 }
 
-func dateRange(period string) (string, error) {
+func dateRange(period string) (int64, int64, error) {
 	var start time.Time
 	today := time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 0, 0, 0, 0, time.UTC)
 	switch period {
@@ -127,17 +127,13 @@ func dateRange(period string) (string, error) {
 		start = today.AddDate(-10, 0, -5)
 	case "ytd":
 		start = time.Date(time.Now().Year(), 1, 1, 0, 0, 0, 0, time.UTC)
-	// decide if we want to pull the first date of the ticker in to add this functionality
-	//case "max":
-	//	start := today.AddDate(0, 0, -5)
+	case "max":
+		start = time.Unix(math.MinInt32, 0)
 	default:
 		// default to 1y prior
-		return "", errInvalidDateRange
+		return 0, 0, errInvalidDateRange
 	}
-	startStr := strconv.FormatInt(start.Unix(), 10)
-	todayStr := strconv.FormatInt(today.Unix(), 10)
-
-	return fmt.Sprintf("period1=%s&period2=%s", startStr, todayStr), nil
+	return start.Unix(), today.Unix(), nil
 }
 
 func validInterval(interval string) error {
